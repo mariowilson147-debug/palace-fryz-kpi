@@ -20,32 +20,20 @@ export default function DashboardPage() {
         setLoading(true);
         // Using approximate fast counts or sum aggregations for the dashboard
         
-        // 1. Branches Count
-        const { count: branchCount } = await supabase
-          .from('branches')
-          .select('*', { count: 'exact', head: true });
-
-        // 2. Total Sales (Current Month) - simplified for now
-        const { data: salesData } = await supabase
-          .from('sales')
-          .select('total_sales')
-          .is('deleted_at', null);
+        const [
+          { count: branchCount },
+          { data: salesData },
+          { data: expenseData },
+          { data: wasteData }
+        ] = await Promise.all([
+          supabase.from('branches').select('*', { count: 'exact', head: true }),
+          supabase.from('sales').select('total_sales').is('deleted_at', null),
+          supabase.from('expenses').select('amount').is('deleted_at', null),
+          supabase.from('waste_items').select('total_cost')
+        ]);
         
         const totalSales = salesData?.reduce((acc, curr) => acc + (Number(curr.total_sales) || 0), 0) || 0;
-
-        // 3. Total Expenses
-        const { data: expenseData } = await supabase
-          .from('expenses')
-          .select('amount')
-          .is('deleted_at', null);
-          
         const totalExpenses = expenseData?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
-
-        // 4. Total Waste cost
-        const { data: wasteData } = await supabase
-          .from('waste_items')
-          .select('total_cost');
-          
         const totalWaste = wasteData?.reduce((acc, curr) => acc + (Number(curr.total_cost) || 0), 0) || 0;
 
         setStats({
