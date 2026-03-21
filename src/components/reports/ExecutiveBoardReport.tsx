@@ -56,8 +56,14 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
           
           <div className="bg-white rounded-lg shadow-sm p-4 relative border border-gray-100">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase text-center">Revenue Breakdown</h3>
-            <div className="absolute inset-0 flex items-center justify-center mt-3"><div className="text-center"><p className="text-[7px] text-gray-400 uppercase">Expense Rate</p><p className="text-lg font-black text-[#0a192f]">{expRate}%</p></div></div>
-            <PieChart width={320} height={140}><Pie data={pieData} dataKey="value" nameKey="name" innerRadius="65%" outerRadius="88%" isAnimationActive={false} paddingAngle={2}>{pieData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Pie><Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize:7}} iconSize={6} /></PieChart>
+            <PieChart width={320} height={140}>
+              <text x={115} y={65} textAnchor="middle" dominantBaseline="middle">
+                <tspan x={115} dy="0" fontSize="8" fill="#9ca3af" fontWeight="bold">EXP RATE</tspan>
+                <tspan x={115} dy="16" fontSize="16" fill="#0a192f" fontWeight="900">{expRate}%</tspan>
+              </text>
+              <Pie cx={115} cy={70} data={pieData} dataKey="value" nameKey="name" innerRadius={48} outerRadius={64} isAnimationActive={false} paddingAngle={2}>{pieData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Pie>
+              <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize:9}} iconSize={8} />
+            </PieChart>
           </div>
         </div>
 
