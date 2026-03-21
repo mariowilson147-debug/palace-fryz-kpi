@@ -83,9 +83,9 @@ export default function ReportsPage() {
         let compWasteQuery: any = Promise.resolve({ data: [] as any[] });
 
         if (compareStartDate && compareEndDate) {
-          compSalesQuery = supabase.from('sales').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
-          compExpQuery = supabase.from('expenses').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
-          compWasteQuery = supabase.from('waste_entries').select('id, branch_id, date').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
+          compSalesQuery = supabase.from('sales').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate) as any;
+          compExpQuery = supabase.from('expenses').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate) as any;
+          compWasteQuery = supabase.from('waste_entries').select('id, branch_id, date').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate) as any;
         }
 
         const [ { data: sales }, { data: expenses }, { data: wasteEntries }, { data: compSales }, { data: compExpenses }, { data: compWasteEntries } ] = await Promise.all([
