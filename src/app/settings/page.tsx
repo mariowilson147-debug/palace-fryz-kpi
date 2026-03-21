@@ -18,7 +18,7 @@ export default function SettingsPage() {
   const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [shiftType, setShiftType] = useState<'single' | 'dual'>('single');
-  const [monthlyTarget, setMonthlyTarget] = useState('');
+  const [expenseRateTarget, setExpenseRateTarget] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,7 +48,7 @@ export default function SettingsPage() {
     setCurrentBranchId(null);
     setName('');
     setShiftType('single');
-    setMonthlyTarget('');
+    setExpenseRateTarget('');
     setFormError('');
     setIsModalOpen(true);
   };
@@ -58,7 +58,7 @@ export default function SettingsPage() {
     setCurrentBranchId(branch.id);
     setName(branch.name);
     setShiftType(branch.shift_type);
-    setMonthlyTarget(branch.monthly_target.toString());
+    setExpenseRateTarget(branch.expense_rate_target.toString());
     setFormError('');
     setIsModalOpen(true);
   };
@@ -76,7 +76,7 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !monthlyTarget) {
+    if (!name || !expenseRateTarget) {
       setFormError('Name and Target are required');
       return;
     }
@@ -88,7 +88,7 @@ export default function SettingsPage() {
       const branchData = {
         name,
         shift_type: shiftType,
-        monthly_target: parseFloat(monthlyTarget)
+        expense_rate_target: parseFloat(expenseRateTarget)
       };
 
       if (isEditing && currentBranchId) {
@@ -141,7 +141,7 @@ export default function SettingsPage() {
                 <tr className="border-b border-border text-gray-400 text-sm tracking-wider uppercase">
                   <th className="pb-3 font-medium">Branch Name</th>
                   <th className="pb-3 font-medium">Shift Type</th>
-                  <th className="pb-3 font-medium text-right">Monthly Target</th>
+                  <th className="pb-3 font-medium text-right">Expense Target (%)</th>
                   <th className="pb-3 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -154,7 +154,7 @@ export default function SettingsPage() {
                         {branch.shift_type}
                       </span>
                     </td>
-                    <td className="py-4 text-right">KES {branch.monthly_target.toLocaleString()}</td>
+                    <td className="py-4 text-right">{branch.expense_rate_target}%</td>
                     <td className="py-4 text-right flex justify-end gap-3">
                       <button 
                         onClick={() => openEditModal(branch)} 
@@ -205,13 +205,14 @@ export default function SettingsPage() {
           />
 
           <Input 
-            label="Monthly Target (KES)" 
+            label="Expense Rate Target (%)" 
             type="number"
             min="0"
-            step="1000"
-            value={monthlyTarget} 
-            onChange={(e) => setMonthlyTarget(e.target.value)} 
-            placeholder="500000" 
+            max="100"
+            step="0.1"
+            value={expenseRateTarget} 
+            onChange={(e) => setExpenseRateTarget(e.target.value)} 
+            placeholder="30.0" 
             required
           />
 

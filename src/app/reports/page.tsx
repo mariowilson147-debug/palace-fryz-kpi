@@ -49,13 +49,19 @@ export default function ReportsPage() {
         const branchPerformance = branches?.map(b => {
           const bSales = sales?.filter(s => s.branch_id === b.id).reduce((sum, s) => sum + (Number(s.total_sales) || 0), 0) || 0;
           const bExp = expenses?.filter(e => e.branch_id === b.id).reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || 0;
-          const targetAchievement = b.monthly_target > 0 ? (bSales / b.monthly_target) * 100 : 0;
+          
+          const actualRate = bSales > 0 ? (bExp / bSales) * 100 : 0;
+          const targetRate = Number(b.expense_rate_target);
+          const passed = actualRate <= targetRate;
+
           return {
             name: b.name,
             sales: bSales,
             expenses: bExp,
             profit: bSales - bExp,
-            achievement: targetAchievement.toFixed(1)
+            actualRate: actualRate.toFixed(1),
+            targetRate: targetRate.toFixed(1),
+            passed
           };
         }) || [];
 
@@ -196,7 +202,7 @@ export default function ReportsPage() {
                     <th className="py-3 px-4 font-semibold w-1/4">Branch</th>
                     <th className="py-3 px-4 font-semibold text-right">Revenue</th>
                     <th className="py-3 px-4 font-semibold text-right">Net Profit</th>
-                    <th className="py-3 px-4 font-semibold text-right">Target Achievement</th>
+                    <th className="py-3 px-4 font-semibold text-right">Expense Rate vs Target</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border print:divide-gray-300">
@@ -206,8 +212,8 @@ export default function ReportsPage() {
                       <td className="py-4 px-4 text-right">KES {bp.sales.toLocaleString()}</td>
                       <td className="py-4 px-4 text-right text-gold print:text-black font-semibold">KES {bp.profit.toLocaleString()}</td>
                       <td className="py-4 px-4 text-right">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${Number(bp.achievement) >= 100 ? 'bg-green-500/20 text-green-400 print:text-green-700' : 'bg-red-500/20 text-red-400 print:text-red-700'}`}>
-                          {bp.achievement}%
+                        <span className={`px-2 py-1 rounded text-xs font-bold ${bp.passed ? 'bg-green-500/20 text-green-400 print:text-green-700' : 'bg-red-500/20 text-red-400 print:text-red-700'}`}>
+                          {bp.actualRate}% (Target: {bp.targetRate}%)
                         </span>
                       </td>
                     </tr>

@@ -5,7 +5,7 @@ export interface Branch {
   id: string;
   name: string;
   shift_type: ShiftType;
-  monthly_target: number;
+  expense_rate_target: number;
   created_at: string;
 }
 

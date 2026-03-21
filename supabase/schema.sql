@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.branches (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   shift_type TEXT NOT NULL CHECK (shift_type IN ('single', 'dual')),
-  monthly_target NUMERIC NOT NULL DEFAULT 0,
+  expense_rate_target NUMERIC NOT NULL DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
