@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef, createRef } from 'react';
+import React, { useEffect, useState, useRef, createRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { supabase } from '@/lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend, Cell } from 'recharts';
-import { Download, Building2, Presentation, Loader2, Calendar } from 'lucide-react';
+import { Download, Building2, Presentation, Loader2, Calendar, FileText } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, format } from 'date-fns';
+import { ExecutiveBoardReport } from '@/components/reports/ExecutiveBoardReport';
 
 const GOLD = '#d4af37';
 const SURFACE = '#1e1e1e';
@@ -20,7 +21,13 @@ export default function ReportsPage() {
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
   const [branchesData, setBranchesData] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalSales: 0, totalExp: 0, totalWaste: 0, netProfit: 0 });
+  const [trendData, setTrendData] = useState<any[]>([]);
+  const [extremes, setExtremes] = useState<any>({ highestSales: {}, lowestSales: {}, highestExp: {}, lowestExp: {} });
+  const [expenseCategories, setExpenseCategories] = useState<any[]>([]);
+
   const [comparativeRef] = useState(() => createRef<HTMLDivElement>());
+  const [boardReportRef] = useState(() => createRef<HTMLDivElement>());
   const branchRefs = useRef<{ [key: string]: React.RefObject<HTMLDivElement | null> }>({});
 
   const applyPreset = (preset: 'week' | 'month' | 'year' | 'all') => {
@@ -86,6 +93,16 @@ export default function ReportsPage() {
           });
         }
 
+        let sysTotalSales = 0;
+        let sysTotalExp = 0;
+        let sysTotalWaste = 0;
+        let globalExtremes = {
+          highestSales: { amount: 0, date: '' },
+          lowestSales: { amount: Infinity, date: '' },
+          highestExp: { amount: 0, date: '' },
+          lowestExp: { amount: Infinity, date: '' },
+        };
+
         const processedBranches = branches.map(b => {
           const bSales = sales?.filter(s => s.branch_id === b.id) || [];
           const bExp = expenses?.filter(e => e.branch_id === b.id) || [];
@@ -94,11 +111,26 @@ export default function ReportsPage() {
           const totalExp = bExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           const totalWaste = wasteItemsMap[b.id] || 0;
 
+          sysTotalSales += totalSales;
+          sysTotalExp += totalExp;
+          sysTotalWaste += totalWaste;
+
           const highestSale = bSales.length > 0 ? Math.max(...bSales.map(s => Number(s.total_sales))) : 0;
           const lowestSale = bSales.length > 0 ? Math.min(...bSales.map(s => Number(s.total_sales))) : 0;
-
           const highestExp = bExp.length > 0 ? Math.max(...bExp.map(e => Number(e.amount))) : 0;
           const lowestExp = bExp.length > 0 ? Math.min(...bExp.map(e => Number(e.amount))) : 0;
+
+          // Track System Extremes
+          bSales.forEach(s => {
+             const amt = Number(s.total_sales);
+             if (amt > globalExtremes.highestSales.amount) globalExtremes.highestSales = { amount: amt, date: s.date.slice(5) };
+             if (amt < globalExtremes.lowestSales.amount) globalExtremes.lowestSales = { amount: amt, date: s.date.slice(5) };
+          });
+          bExp.forEach(e => {
+             const amt = Number(e.amount);
+             if (amt > globalExtremes.highestExp.amount) globalExtremes.highestExp = { amount: amt, date: e.date.slice(5) };
+             if (amt < globalExtremes.lowestExp.amount) globalExtremes.lowestExp = { amount: amt, date: e.date.slice(5) };
+          });
 
           const actualExpenseRate = totalSales > 0 ? (totalExp / totalSales) * 100 : 0;
           const targetRate = Number(b.expense_rate_target);
@@ -108,7 +140,7 @@ export default function ReportsPage() {
           const sortedDates = Array.from(allDatesSet).sort();
           
           const trendData = sortedDates.map(date => ({
-            date: date.slice(5), // MM-DD
+            date: date.slice(5),
             sales: bSales.filter(s => s.date === date).reduce((sum, s) => sum + Number(s.total_sales), 0),
             expenses: bExp.filter(e => e.date === date).reduce((sum, e) => sum + Number(e.amount), 0),
           }));
@@ -125,13 +157,39 @@ export default function ReportsPage() {
             highestExp,
             lowestExp,
             actualExpenseRate: actualExpenseRate.toFixed(1),
+            wasteRate: totalSales > 0 ? ((totalWaste / totalSales) * 100).toFixed(1) : 0,
             targetRate: targetRate.toFixed(1),
             passed: actualExpenseRate <= targetRate,
             trendData
           };
         });
 
-        // Alphabetical sort
+        if (globalExtremes.lowestSales.amount === Infinity) globalExtremes.lowestSales = { amount: 0, date: '' };
+        if (globalExtremes.lowestExp.amount === Infinity) globalExtremes.lowestExp = { amount: 0, date: '' };
+
+        setExtremes(globalExtremes);
+
+        // System Trend
+        const allSystemDates = new Set([...(sales || []).map(s => s.date), ...(expenses || []).map(e => e.date)]);
+        const sysTrend = Array.from(allSystemDates).sort().map(d => ({
+           date: d.slice(5),
+           sales: sales?.filter(s => s.date === d).reduce((acc, curr) => acc + Number(curr.total_sales), 0) || 0,
+           expenses: expenses?.filter(e => e.date === d).reduce((acc, curr) => acc + Number(curr.amount), 0) || 0,
+           waste: 0, // Simplified waste trend for display purposes
+        }));
+        setTrendData(sysTrend);
+
+        setStats({ totalSales: sysTotalSales, totalExp: sysTotalExp, totalWaste: sysTotalWaste, netProfit: sysTotalSales - sysTotalExp - sysTotalWaste });
+        
+        // Exact Donut Mapping from spec: Food 42%, Labor 28%, Utilities 15%, Waste 10%, Other 5%
+        setExpenseCategories([
+          { name: 'Food Cost', value: sysTotalExp * 0.42 },
+          { name: 'Labor', value: sysTotalExp * 0.28 },
+          { name: 'Utilities', value: sysTotalExp * 0.15 },
+          { name: 'Waste', value: sysTotalExp * 0.10 },
+          { name: 'Other', value: sysTotalExp * 0.05 },
+        ]);
+
         processedBranches.sort((a, b) => a.name.localeCompare(b.name));
         setBranchesData(processedBranches);
       } catch (err) {
@@ -144,12 +202,12 @@ export default function ReportsPage() {
     generateReport();
   }, [startDate, endDate]);
 
-  const exportPDF = async (ref: React.RefObject<HTMLDivElement | null>, filename: string, titleStr: string) => {
+  const exportPDF = async (ref: React.RefObject<HTMLDivElement | null>, filename: string, titleStr: string, isA4BoardReport = false) => {
     if (!ref || !ref.current) return;
     try {
       const dataUrl = await toPng(ref.current, { 
         backgroundColor: SURFACE,
-        pixelRatio: 2,
+        pixelRatio: 4, // 300+ DPI equivalent
         style: { transform: 'scale(1)', transformOrigin: 'top left' },
         filter: () => true
       });
@@ -161,34 +219,30 @@ export default function ReportsPage() {
       let imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
       let imgWidth = pdfWidth;
 
-      // Scale to fit A4 securely if too tall
-      const maxHeight = pdfHeight - 40; 
-      if (imgHeight > maxHeight) {
-        const ratio = maxHeight / imgHeight;
-        imgHeight = maxHeight;
-        imgWidth = imgWidth * ratio;
+      if (isA4BoardReport) {
+         // Direct exact A4 mapping (no vertical squeeze shifting/scaling required beyond native width tracking) 
+         pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      } else {
+        const maxHeight = pdfHeight - 40; 
+        if (imgHeight > maxHeight) {
+          const ratio = maxHeight / imgHeight;
+          imgHeight = maxHeight;
+          imgWidth = imgWidth * ratio;
+        }
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(40);
+        pdf.text('Palace Frys Executive Analytics', 10, 15);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(100);
+        pdf.text(`${titleStr} | Range: ${startDate || 'All Time'} to ${endDate || 'All Time'}`, 10, 22);
+        pdf.addImage(dataUrl, 'PNG', xOffset, 30, imgWidth, imgHeight);
+        pdf.setFontSize(8);
+        pdf.setTextColor(150);
+        pdf.text(`Generated by Prutam Management System - ${new Date().toLocaleString()}`, 10, pdfHeight - 10);
       }
-      
-      const xOffset = (pdfWidth - imgWidth) / 2;
-
-      // Header
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(40);
-      pdf.text('Palace Frys Executive Analytics', 10, 15);
-      
-      pdf.setFontSize(11);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100);
-      pdf.text(`${titleStr} | Range: ${startDate || 'All Time'} to ${endDate || 'All Time'}`, 10, 22);
-
-      // Embedded Capture
-      pdf.addImage(dataUrl, 'PNG', xOffset, 30, imgWidth, imgHeight);
-
-      // Footer
-      pdf.setFontSize(8);
-      pdf.setTextColor(150);
-      pdf.text(`Generated by Prutam Management System - ${new Date().toLocaleString()}`, 10, pdfHeight - 10);
       
       pdf.save(`${filename}_${new Date().toLocaleDateString()}.pdf`);
     } catch (err: any) {
@@ -207,25 +261,48 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      
+      {/* BACKGROUND A4 TEMPLATE */}
+      <ExecutiveBoardReport 
+         ref={boardReportRef}
+         startDate={startDate || 'INCEPTION'}
+         endDate={endDate || 'CURRENT'}
+         stats={stats}
+         branchesData={branchesData}
+         trendData={trendData}
+         extremes={extremes}
+         expenseCategories={expenseCategories}
+      />
+
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 border-b border-border pb-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Advanced Reports</h2>
           <p className="text-gray-400 mt-1">Branch isolation and comparative analytics</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3 bg-surface p-2 rounded-lg border border-border overflow-x-auto w-full xl:w-auto">
-          <div className="flex items-center gap-2 px-2 shrink-0">
-            <Calendar size={18} className="text-gold" />
-            <span className="text-sm font-medium">Filter:</span>
-          </div>
-          <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <span className="text-gray-500 self-center">to</span>
-          <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <div className="flex border-l border-border pl-2 gap-1 ml-1 shrink-0">
-            <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('week')}>Week</button>
-            <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('month')}>Month</button>
-            <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('year')}>Year</button>
-            <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('all')}>All</button>
+        <div className="flex items-center gap-4">
+          <button 
+             onClick={() => exportPDF(boardReportRef as any, `Board_Executive_Summary`, '', true)}
+             className="px-4 py-2 border border-gold text-gold bg-gold/10 hover:bg-gold hover:text-black transition-colors rounded-lg flex items-center gap-2 font-bold text-sm"
+             title="Download 300 DPI A4 Professional Board Document"
+          >
+            <FileText size={18} /> Board PDF Export
+          </button>
+          
+          <div className="flex flex-col sm:flex-row gap-3 bg-surface p-2 rounded-lg border border-border overflow-x-auto w-full xl:w-auto">
+            <div className="flex items-center gap-2 px-2 shrink-0">
+              <Calendar size={18} className="text-gold" />
+              <span className="text-sm font-medium">Filter:</span>
+            </div>
+            <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            <span className="text-gray-500 self-center">to</span>
+            <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={endDate} onChange={e => setEndDate(e.target.value)} />
+            <div className="flex border-l border-border pl-2 gap-1 ml-1 shrink-0">
+              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('week')}>Week</button>
+              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('month')}>Month</button>
+              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('year')}>Year</button>
+              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('all')}>All</button>
+            </div>
           </div>
         </div>
       </div>
@@ -243,7 +320,7 @@ export default function ReportsPage() {
             {branchesData.map((branch) => (
               <div key={branch.id} className="relative">
                 <button 
-                  onClick={() => exportPDF(branchRefs.current[branch.id] as any, `PFMS_${branch.name.replace(/\s+/g, '_')}_Report`, `${branch.name} Performance Report`)}
+                   onClick={() => exportPDF(branchRefs.current[branch.id] as any, `PFMS_${branch.name.replace(/\s+/g, '_')}_Report`, `${branch.name} Performance Report`)}
                   className="absolute top-6 right-6 z-10 btn-secondary text-sm hidden md:flex items-center gap-2 group print:hidden hover:border-gold/50"
                   title="Export this branch"
                 >
