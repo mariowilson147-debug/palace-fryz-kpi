@@ -166,8 +166,8 @@ export default function ReportsPage() {
 
           const bCompSales = compSales?.filter((s: any) => s.branch_id === b.id) || [];
           const bCompExp = compExpenses?.filter((e: any) => e.branch_id === b.id) || [];
-          const compTotalSales = bCompSales.reduce((sum, s) => sum + (Number(s.total_sales) || 0), 0);
-          const compTotalExp = bCompExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const compTotalSales = bCompSales.reduce((sum: number, s: any) => sum + (Number(s.total_sales) || 0), 0);
+          const compTotalExp = bCompExp.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
           const compTotalWaste = compWasteItemsMap[b.id] || 0;
           const compNetProfit = compTotalSales - compTotalExp - compTotalWaste;
 
