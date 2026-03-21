@@ -15,7 +15,6 @@ export default function ExpensesPage() {
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState('');
-  const [description, setDescription] = useState('');
 
   useEffect(() => {
     async function fetchBranches() {
@@ -42,15 +41,13 @@ export default function ExpensesPage() {
       const { error } = await supabase.from('expenses').insert([{
         branch_id: selectedBranchId,
         date,
-        amount: Number(amount) || 0,
-        description,
+        amount: Number(amount) || 0
       }]);
 
       if (error) throw error;
       
       alert('Expense logged successfully!');
       setAmount('');
-      setDescription('');
       
     } catch (err: any) {
       alert(err.message || 'Failed to log expense');
@@ -104,18 +101,6 @@ export default function ExpensesPage() {
                 placeholder="0"
                 required
               />
-
-              <div className="w-full">
-                <label className="input-label" htmlFor="desc">Description of Expense</label>
-                <textarea
-                  id="desc"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="input-field min-h-[100px] resize-y"
-                  placeholder="e.g. Paid KPLC Bill, Bought kitchen supplies..."
-                  required
-                />
-              </div>
             </div>
           </div>
 

@@ -167,7 +167,6 @@ export default function HistoryPage() {
                   
                   {dataType === 'expenses' && (
                     <>
-                      <th className="p-4 font-medium">Description</th>
                       <th className="p-4 font-medium text-right text-red-400">Amount</th>
                     </>
                   )}
@@ -200,7 +199,6 @@ export default function HistoryPage() {
 
                     {dataType === 'expenses' && (
                       <>
-                        <td className="p-4 text-gray-300 max-w-xs truncate" title={record.description}>{record.description || '-'}</td>
                         <td className="p-4 text-right font-bold">{(record.amount || 0).toLocaleString()}</td>
                       </>
                     )}
