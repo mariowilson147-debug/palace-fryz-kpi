@@ -26,7 +26,7 @@ export default function Navigation() {
   const pathname = usePathname();
 
   return (
-    <div className="w-full bg-surface border-b border-border z-20 flex px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar sticky top-20">
+    <div className="w-full bg-surface border-b border-border flex px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar">
       <nav className="flex space-x-2 mx-auto max-w-7xl w-full">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
