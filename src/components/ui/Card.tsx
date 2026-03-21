@@ -36,10 +36,6 @@ interface StatCardProps {
 export function StatCard({ title, value, icon: Icon, trend, trendUp }: StatCardProps) {
   return (
     <div className="premium-card p-6 relative overflow-hidden group">
-      <div className="absolute -right-6 -top-6 text-gold/5 group-hover:text-gold/10 transition-colors duration-500">
-        <Icon size={120} />
-      </div>
-      
       <div className="relative z-10">
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">{title}</h3>

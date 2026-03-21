@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { Download, Building2, TrendingUp, Presentation, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 
 const GOLD = '#d4af37';
 const SURFACE = '#1e1e1e';
@@ -107,8 +107,9 @@ export default function ReportsPage() {
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`PFMS_Executive_Report_${new Date().toLocaleDateString()}.pdf`);
-    } catch (err) {
-      alert('Failed to generate PDF');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to generate PDF: ${err.message || String(err)}`);
     }
   };
 
@@ -166,8 +167,8 @@ export default function ReportsPage() {
                   <XAxis dataKey="name" stroke="#888" tick={{ fill: '#888' }} />
                   <YAxis stroke="#888" tick={{ fill: '#888' }} tickFormatter={(val) => `K${val/1000}`} />
                   <Tooltip contentStyle={{ backgroundColor: SURFACE, borderColor: '#333' }} />
-                  <Bar dataKey="sales" name="Sales" fill={GOLD} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expenses" name="Expenses" fill={RED} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="sales" name="Sales" fill={GOLD} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="expenses" name="Expenses" fill={RED} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -183,7 +184,7 @@ export default function ReportsPage() {
                   <XAxis dataKey="date" stroke="#888" tick={{ fill: '#888' }} />
                   <YAxis stroke="#888" tick={{ fill: '#888' }} tickFormatter={(val) => `K${val/1000}`} />
                   <Tooltip contentStyle={{ backgroundColor: SURFACE, borderColor: '#333' }} />
-                  <Line type="monotone" dataKey="sales" stroke={GOLD} strokeWidth={3} dot={{ r: 6, fill: GOLD }} />
+                  <Line type="monotone" dataKey="sales" stroke={GOLD} strokeWidth={3} dot={{ r: 6, fill: GOLD }} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
