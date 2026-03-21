@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
@@ -17,6 +17,7 @@ export default function HistoryPage() {
   const [dataType, setDataType] = useState<RecordType>('sales');
   const [branchId, setBranchId] = useState<string>('all');
   const [records, setRecords] = useState<any[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadInitial() {
@@ -183,8 +184,16 @@ export default function HistoryPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {records.map((record) => (
-                  <tr key={record.id} className="hover:bg-surface/60 transition-colors">
-                    <td className="p-4 font-medium">{new Date(record.date).toLocaleDateString()}</td>
+                  <React.Fragment key={record.id}>
+                    <tr 
+                      className={`transition-colors ${dataType === 'waste_entries' ? 'cursor-pointer hover:bg-surface/80' : 'hover:bg-surface/60'}`}
+                      onClick={() => {
+                        if (dataType === 'waste_entries') {
+                          setExpandedId(expandedId === record.id ? null : record.id);
+                        }
+                      }}
+                    >
+                      <td className="p-4 font-medium">{new Date(record.date).toLocaleDateString()}</td>
                     <td className="p-4">{record.branches?.name}</td>
                     
                     {dataType === 'sales' && (
@@ -211,15 +220,48 @@ export default function HistoryPage() {
                     )}
 
                     <td className="p-4 text-right">
+                      {dataType === 'waste_entries' && (
+                         <span className="text-xs text-gold/50 mr-4 font-semibold uppercase tracking-widest hidden md:inline">Tap to view</span>
+                      )}
                       <button 
-                        onClick={() => handleDelete(record.id)}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(record.id); }}
                         className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                         title="Delete (Soft)"
                       >
                         <Trash2 size={18} />
                       </button>
                     </td>
-                  </tr>
+                    </tr>
+                    {dataType === 'waste_entries' && expandedId === record.id && (
+                      <tr className="bg-surface/20 border-b border-border">
+                        <td colSpan={5} className="p-4">
+                           <div className="bg-background rounded-lg p-5 border border-border/50 shadow-inner overflow-x-auto">
+                              <h4 className="text-sm font-semibold mb-4 text-gold tracking-wide">Waste Items Detail Breakdown</h4>
+                              <table className="w-full text-sm text-left">
+                                <thead className="text-gray-400 border-b border-border/50">
+                                  <tr>
+                                    <th className="pb-3 font-medium">Item Name</th>
+                                    <th className="pb-3 font-medium text-right">Qty</th>
+                                    <th className="pb-3 font-medium text-right">Unit Cost (KES)</th>
+                                    <th className="pb-3 font-medium text-right">Total (KES)</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/30">
+                                  {record.items?.map((item: any, idx: number) => (
+                                    <tr key={idx} className="hover:bg-surface/30">
+                                      <td className="py-3 text-gray-300 font-medium">{item.item_name}</td>
+                                      <td className="py-3 text-right">{item.quantity} <span className="text-gray-500 text-xs ml-0.5">{item.unit}</span></td>
+                                      <td className="py-3 text-right text-gray-400">{Number(item.unit_cost).toLocaleString()}</td>
+                                      <td className="py-3 text-right text-red-400 font-semibold">{Number(item.total_cost).toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                           </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
