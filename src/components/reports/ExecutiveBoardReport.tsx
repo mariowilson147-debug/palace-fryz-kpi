@@ -34,7 +34,7 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 h-44">
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-lg shadow-sm p-3">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-3 uppercase">Sales & Expense by Branch</h3>
             <BarChart width={330} height={120} layout="vertical" data={branchesData} margin={{ left: -10 }}><CartesianGrid strokeDasharray="2 2" horizontal vertical={false} /><XAxis type="number" fontSize={8} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" fontSize={7} axisLine={false} tickLine={false} /><Bar dataKey="totalSales" fill="#e85d04" barSize={6} isAnimationActive={false} /><Bar dataKey="totalExp" fill="#1e3a8a" barSize={6} isAnimationActive={false} /></BarChart>
@@ -47,12 +47,12 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-3 h-40">
+        <div className="bg-white rounded-lg shadow-sm p-3">
           <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase">Monthly Performance Trends</h3>
           <LineChart width={700} height={110} data={trendData} margin={{left: -10}}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" fontSize={7} axisLine={false} tickLine={false} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Line type="monotone" dataKey="sales" stroke="#e85d04" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} /><Line type="monotone" dataKey="expenses" stroke="#1e3a8a" strokeWidth={2} dot={false} isAnimationActive={false} /><Line type="monotone" dataKey="waste" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} /></LineChart>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 h-40">
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-white rounded-lg shadow-sm p-3">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase">Highest & Lowest Days</h3>
             <BarChart width={330} height={110} data={extremeData} margin={{ left: -20 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={7} axisLine={false} tickLine={false} interval={0} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Bar dataKey="value" barSize={12} isAnimationActive={false} label={{ position: 'top', fontSize: 6, formatter: ((v: any) => fmt(Number(v))) as any }}>{extremeData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Bar></BarChart>
