@@ -77,10 +77,9 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
           </div>
         </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <table className="w-full text-left text-[9px]"><thead className="bg-[#fcfaf5] border-b border-gray-200"><tr className="text-[#0a192f] uppercase"><th className="py-2 px-3">Branch</th><th className="py-2 px-3 text-right">Sales</th><th className="py-2 px-3 text-right">Expenses</th><th className="py-2 px-3 text-right">Waste %</th><th className="py-2 px-3 text-right">Net Profit</th><th className="py-2 px-3 text-center">Expense Rate</th></tr></thead><tbody className="divide-y divide-gray-100">{branchesData.map((b: any, i: number) => (<tr key={i}><td className="py-2 px-3 font-bold">{b.name}</td><td className="py-2 px-3 text-right">{fmt(b.totalSales)}</td><td className="py-2 px-3 text-right">{fmt(b.totalExp)}</td><td className="py-2 px-3 text-right text-red-500">{b.wasteRate}%</td><td className="py-2 px-3 text-right font-bold text-[#0a192f]">{fmt(b.netProfit)}</td><td className="py-2 px-3 text-center text-gray-500">{b.actualExpenseRate}%</td></tr>))}</tbody></table>
         </div>
-      </div>
 
         <div className="absolute bottom-6 left-8 right-8 text-[7px] text-gray-500 uppercase tracking-widest font-semibold pb-4">
           <div className="h-[1.5px] bg-[#d4af37] w-full mb-3 opacity-80"></div>

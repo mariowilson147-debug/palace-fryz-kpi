@@ -78,9 +78,9 @@ export default function ReportsPage() {
           wasteQuery = wasteQuery.lte('date', endDate);
         }
 
-        let compSalesQuery = Promise.resolve({ data: [] as any[] });
-        let compExpQuery = Promise.resolve({ data: [] as any[] });
-        let compWasteQuery = Promise.resolve({ data: [] as any[] });
+        let compSalesQuery: any = Promise.resolve({ data: [] as any[] });
+        let compExpQuery: any = Promise.resolve({ data: [] as any[] });
+        let compWasteQuery: any = Promise.resolve({ data: [] as any[] });
 
         if (compareStartDate && compareEndDate) {
           compSalesQuery = supabase.from('sales').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
