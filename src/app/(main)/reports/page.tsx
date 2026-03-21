@@ -19,9 +19,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [isComparing, setIsComparing] = useState(false);
-  const [compareStartDate, setCompareStartDate] = useState('');
-  const [compareEndDate, setCompareEndDate] = useState('');
+  const [compareStartDate, setCompareStartDate] = useState(format(startOfMonth(new Date(new Date().setMonth(new Date().getMonth() - 1))), 'yyyy-MM-dd'));
+  const [compareEndDate, setCompareEndDate] = useState(format(endOfMonth(new Date(new Date().setMonth(new Date().getMonth() - 1))), 'yyyy-MM-dd'));
   
   const [branchesData, setBranchesData] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSales: 0, totalExp: 0, totalWaste: 0, netProfit: 0 });
@@ -83,7 +82,7 @@ export default function ReportsPage() {
         let compExpQuery = Promise.resolve({ data: [] as any[] });
         let compWasteQuery = Promise.resolve({ data: [] as any[] });
 
-        if (isComparing && compareStartDate && compareEndDate) {
+        if (compareStartDate && compareEndDate) {
           compSalesQuery = supabase.from('sales').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
           compExpQuery = supabase.from('expenses').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
           compWasteQuery = supabase.from('waste_entries').select('id, branch_id, date').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
@@ -188,10 +187,10 @@ export default function ReportsPage() {
             targetRate: targetRate.toFixed(1),
             passed: actualExpenseRate <= targetRate,
             trendData,
-            compTotalSales: isComparing ? compTotalSales : undefined,
-            compTotalExp: isComparing ? compTotalExp : undefined,
-            compTotalWaste: isComparing ? compTotalWaste : undefined,
-            compNetProfit: isComparing ? compNetProfit : undefined,
+            compTotalSales: (compareStartDate && compareEndDate) ? compTotalSales : undefined,
+            compTotalExp: (compareStartDate && compareEndDate) ? compTotalExp : undefined,
+            compTotalWaste: (compareStartDate && compareEndDate) ? compTotalWaste : undefined,
+            compNetProfit: (compareStartDate && compareEndDate) ? compNetProfit : undefined,
           };
         });
 
@@ -231,7 +230,7 @@ export default function ReportsPage() {
     }
 
     generateReport();
-  }, [startDate, endDate, isComparing, compareStartDate, compareEndDate]);
+  }, [startDate, endDate, compareStartDate, compareEndDate]);
 
   const exportPDF = async (ref: React.RefObject<HTMLDivElement | null>, filename: string, titleStr: string, isA4BoardReport = false) => {
     if (!ref || !ref.current) return;
@@ -321,7 +320,6 @@ export default function ReportsPage() {
          ref={boardReportRef}
          startDate={startDate || 'INCEPTION'}
          endDate={endDate || 'CURRENT'}
-         isComparing={isComparing}
          compareStartDate={compareStartDate}
          compareEndDate={compareEndDate}
          stats={stats}
@@ -349,33 +347,28 @@ export default function ReportsPage() {
             <div className="flex flex-col sm:flex-row gap-3 bg-surface p-2 rounded-lg border border-border overflow-x-auto w-full">
               <div className="flex items-center gap-2 px-2 shrink-0">
                 <Calendar size={18} className="text-gold" />
-                <span className="text-sm font-medium">Filter:</span>
+                <span className="text-sm font-medium text-white">Primary:</span>
               </div>
               <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={startDate} onChange={e => setStartDate(e.target.value)} />
-              <span className="text-gray-500 self-center">to</span>
+              <span className="text-gray-500 self-center font-black">TO</span>
               <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={endDate} onChange={e => setEndDate(e.target.value)} />
               <div className="flex border-l border-border pl-2 gap-1 ml-1 shrink-0">
                 <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('week')}>Week</button>
                 <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('month')}>Month</button>
                 <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('year')}>Year</button>
-                <label className="flex items-center gap-2 ml-4 px-2 cursor-pointer border-l border-border pl-4">
-                  <input type="checkbox" checked={isComparing} onChange={(e) => setIsComparing(e.target.checked)} className="accent-gold w-4 h-4" />
-                  <span className="text-sm text-gray-300">Compare</span>
-                </label>
               </div>
             </div>
             
-            {isComparing && (
-               <div className="flex flex-col sm:flex-row gap-3 bg-surface/50 p-2 rounded-lg border border-border border-dashed overflow-x-auto w-full animate-in fade-in slide-in-from-top-2">
-                 <div className="flex items-center gap-2 px-2 shrink-0">
-                   <div className="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center text-[9px] text-gray-400">vs</div>
-                   <span className="text-sm font-medium text-gray-400">Previous:</span>
-                 </div>
-                 <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0" value={compareStartDate} onChange={e => setCompareStartDate(e.target.value)} />
-                 <span className="text-gray-600 self-center">to</span>
-                 <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0" value={compareEndDate} onChange={e => setCompareEndDate(e.target.value)} />
+            <div className="flex flex-col sm:flex-row gap-3 bg-surface/50 p-2 rounded-lg border border-border border-dashed overflow-x-auto w-full">
+               <div className="flex items-center gap-2 px-2 shrink-0">
+                 <div className="w-4 h-4 rounded-full bg-gold/10 border border-gold/50 flex items-center justify-center text-[8px] font-bold text-gold">VS</div>
+                 <span className="text-sm font-medium text-gray-300">Compare:</span>
                </div>
-            )}
+               <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0 hover:border-gold/50 focus:border-gold" value={compareStartDate} onChange={e => setCompareStartDate(e.target.value)} />
+               <span className="text-gray-600 self-center font-black">TO</span>
+               <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0 hover:border-gold/50 focus:border-gold" value={compareEndDate} onChange={e => setCompareEndDate(e.target.value)} />
+               <button onClick={() => { setCompareStartDate(''); setCompareEndDate(''); }} className="ml-2 px-3 py-1.5 text-xs bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded border border-red-500/20 transition-all">Clear</button>
+            </div>
           </div>
         </div>
       </div>
