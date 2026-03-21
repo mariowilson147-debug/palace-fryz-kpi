@@ -19,12 +19,12 @@ export default function Header() {
   return (
     <header className="h-20 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <button className="md:hidden text-gray-400 hover:text-gold transition-colors">
-          <Menu size={24} />
-        </button>
-        <h1 className="text-xl font-semibold tracking-wide hidden sm:block">
-          Executive <span className="text-gold">Dashboard</span>
+        <h1 className="text-2xl font-bold tracking-widest text-foreground">
+          PALACE <span className="text-gold">FRYS</span>
         </h1>
+        <span className="hidden md:inline-block px-3 py-1 bg-surface border border-border rounded-full text-xs text-gray-400 tracking-widest uppercase">
+          System
+        </span>
       </div>
 
       <div className="flex items-center gap-6">
