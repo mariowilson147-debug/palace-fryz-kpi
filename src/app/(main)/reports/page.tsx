@@ -104,10 +104,10 @@ export default function ReportsPage() {
 
         let compWasteItemsMap: Record<string, number> = {};
         if (compWasteEntries && compWasteEntries.length > 0) {
-          const entryIds = compWasteEntries.map(w => w.id);
+          const entryIds = compWasteEntries.map((w: any) => w.id);
           const { data: items } = await supabase.from('waste_items').select('waste_entry_id, total_cost').in('waste_entry_id', entryIds);
           items?.forEach(item => {
-            const entry = compWasteEntries.find(w => w.id === item.waste_entry_id);
+            const entry = compWasteEntries.find((w: any) => w.id === item.waste_entry_id);
             if (entry) compWasteItemsMap[entry.branch_id] = (compWasteItemsMap[entry.branch_id] || 0) + Number(item.total_cost);
           });
         }
@@ -164,8 +164,8 @@ export default function ReportsPage() {
             expenses: bExp.filter(e => e.date === date).reduce((sum, e) => sum + Number(e.amount), 0),
           }));
 
-          const bCompSales = compSales?.filter(s => s.branch_id === b.id) || [];
-          const bCompExp = compExpenses?.filter(e => e.branch_id === b.id) || [];
+          const bCompSales = compSales?.filter((s: any) => s.branch_id === b.id) || [];
+          const bCompExp = compExpenses?.filter((e: any) => e.branch_id === b.id) || [];
           const compTotalSales = bCompSales.reduce((sum, s) => sum + (Number(s.total_sales) || 0), 0);
           const compTotalExp = bCompExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           const compTotalWaste = compWasteItemsMap[b.id] || 0;
