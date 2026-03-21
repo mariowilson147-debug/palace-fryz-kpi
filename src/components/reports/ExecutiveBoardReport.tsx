@@ -11,7 +11,7 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
   ];
 
   return (
-    <div ref={ref} className="bg-[#fdfbf7] text-gray-900 fixed top-[-9999px] left-0 z-[-1] tracking-wide" style={{ width: '794px', height: '1123px', fontFamily: 'Arial, sans-serif' }}>
+    <div ref={ref} className="bg-[#fcfaf5] text-gray-900 fixed top-0 left-[200vw] z-[-1] tracking-wide" style={{ width: '794px', height: '1123px', fontFamily: 'Arial, sans-serif' }}>
       <div className="bg-[#0a192f] text-white px-8 py-5 flex justify-between items-start" style={{ height: '85px' }}>
         <div className="w-6 h-6 border-[1.5px] border-[#d4af37] flex items-center justify-center font-bold text-[#d4af37] text-[10px]">PF</div>
         <div className="text-center"><h1 className="text-[14px] font-extrabold text-[#fdfbf7]">PALACE FRYS MONTHLY BRANCH SALES, EXPENSE & WASTE REPORT</h1><p className="text-[10px] text-[#d4af37] mt-1 uppercase font-semibold">Prepared for Management Review | {startDate} to {endDate}</p></div>

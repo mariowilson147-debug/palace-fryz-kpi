@@ -206,8 +206,8 @@ export default function ReportsPage() {
     if (!ref || !ref.current) return;
     try {
       const dataUrl = await toPng(ref.current, { 
-        backgroundColor: SURFACE,
-        pixelRatio: 4, // 300+ DPI equivalent
+        backgroundColor: isA4BoardReport ? '#fcfaf5' : SURFACE,
+        pixelRatio: isA4BoardReport ? 3 : 2,
         style: { transform: 'scale(1)', transformOrigin: 'top left' },
         filter: () => true
       });
