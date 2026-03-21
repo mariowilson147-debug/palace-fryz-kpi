@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, CartesianGrid, Legend, PieChart, Pie, Cell, ReferenceLine } from 'recharts';
 
-export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate, endDate, stats, branchesData, trendData, extremes, expenseCategories }, ref) => {
+export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate, endDate, isComparing, compareStartDate, compareEndDate, stats, branchesData, trendData, extremes }, ref) => {
   const fmt = (v: number) => v.toLocaleString();
   const extremeData = [
     { name: `High Sale`, value: extremes.highestSales.amount, fill: '#10b981' }, 
@@ -10,15 +10,29 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
     { name: `Low Exp`, value: extremes.lowestExp.amount, fill: '#0d9488' }
   ];
 
+  const pieData = [
+    { name: 'Expenses', value: stats.totalExp || 0, fill: '#1e3a8a' },
+    { name: 'Waste', value: stats.totalWaste || 0, fill: '#ef4444' },
+    { name: 'Net Profit', value: Math.max(0, stats.netProfit), fill: '#10b981' }
+  ].filter(d => d.value > 0);
+  
+  const expRate = stats.totalSales > 0 ? ((stats.totalExp / stats.totalSales) * 100).toFixed(1) : '0.0';
+
   return (
     <div ref={ref} className="bg-[#fcfaf5] text-gray-900 absolute top-0 left-0 z-[-50] tracking-wide" style={{ width: '794px', height: '1123px', fontFamily: 'Arial, sans-serif' }}>
       <div className="bg-[#0a192f] text-white px-8 py-5 flex justify-between items-start" style={{ height: '85px' }}>
         <div className="w-6 h-6 border-[1.5px] border-[#d4af37] flex items-center justify-center font-bold text-[#d4af37] text-[10px]">PF</div>
-        <div className="text-center"><h1 className="text-[14px] font-extrabold text-[#fdfbf7]">PALACE FRYS MONTHLY BRANCH SALES, EXPENSE & WASTE REPORT</h1><p className="text-[10px] text-[#d4af37] mt-1 uppercase font-semibold">Prepared for Management Review | {startDate} to {endDate}</p></div>
+        <div className="text-center">
+          <h1 className="text-[14px] font-extrabold text-[#fdfbf7]">PALACE FRYS MONTHLY BRANCH SALES, EXPENSE & WASTE REPORT</h1>
+          <p className="text-[10px] text-[#d4af37] mt-1 uppercase font-semibold">
+            Prepared for Management Review | {startDate} to {endDate}
+            {isComparing && compareStartDate ? ` (VS ${compareStartDate} TO ${compareEndDate})` : ''}
+          </p>
+        </div>
         <div className="text-right text-[8px] text-gray-300">Generated:<br/>{new Date().toLocaleDateString('en-GB')}</div>
       </div>
 
-      <div className="px-8 py-6 space-y-4">
+      <div className="px-8 py-5 space-y-5">
         <div className="grid grid-cols-4 gap-4">
           {[
             { tag: 'TOTAL SALES', val: fmt(stats.totalSales), sub: 'Total Revenue' },
@@ -34,32 +48,32 @@ export const ExecutiveBoardReport = forwardRef<HTMLDivElement, any>(({ startDate
           ))}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg shadow-sm p-3">
+        <div className="grid grid-cols-2 gap-5">
+          <div className="bg-white rounded-lg shadow-sm p-4 pb-2 border border-gray-100">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-3 uppercase">Sales & Expense by Branch</h3>
-            <BarChart width={330} height={120} layout="vertical" data={branchesData} margin={{ left: -10 }}><CartesianGrid strokeDasharray="2 2" horizontal vertical={false} /><XAxis type="number" fontSize={8} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" fontSize={7} axisLine={false} tickLine={false} /><Bar dataKey="totalSales" fill="#e85d04" barSize={6} isAnimationActive={false} /><Bar dataKey="totalExp" fill="#1e3a8a" barSize={6} isAnimationActive={false} /></BarChart>
+            <BarChart width={320} height={130} layout="vertical" data={branchesData} margin={{ left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="2 2" horizontal vertical={false} /><XAxis type="number" fontSize={8} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><YAxis dataKey="name" type="category" fontSize={7} axisLine={false} tickLine={false} /><Bar dataKey="totalSales" fill="#e85d04" barSize={7} isAnimationActive={false} /><Bar dataKey="totalExp" fill="#1e3a8a" barSize={7} isAnimationActive={false} /></BarChart>
           </div>
           
-          <div className="bg-white rounded-lg shadow-sm p-3 relative">
-            <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase text-center">Expense Breakdown</h3>
-            <div className="absolute inset-0 flex items-center justify-center mt-4"><div className="text-center"><p className="text-[7px] text-gray-400 uppercase">Total Expenses</p><p className="text-xs font-bold text-[#0a192f]">{fmt(stats.totalExp)}</p></div></div>
-            <PieChart width={330} height={130}><Pie data={expenseCategories} dataKey="value" nameKey="name" innerRadius="65%" outerRadius="85%" isAnimationActive={false} paddingAngle={2}>{expenseCategories.map((_: any, i: number) => <Cell key={i} fill={['#e85d04', '#0d9488', '#3b82f6', '#d4af37', '#9ca3af'][i % 5]} />)}</Pie><Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize:7}} iconSize={5} /></PieChart>
+          <div className="bg-white rounded-lg shadow-sm p-4 relative border border-gray-100">
+            <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase text-center">Revenue Breakdown</h3>
+            <div className="absolute inset-0 flex items-center justify-center mt-3"><div className="text-center"><p className="text-[7px] text-gray-400 uppercase">Expense Rate</p><p className="text-lg font-black text-[#0a192f]">{expRate}%</p></div></div>
+            <PieChart width={320} height={140}><Pie data={pieData} dataKey="value" nameKey="name" innerRadius="65%" outerRadius="88%" isAnimationActive={false} paddingAngle={2}>{pieData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Pie><Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize:7}} iconSize={6} /></PieChart>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-3">
+        <div className="bg-white rounded-lg shadow-sm p-4 pb-2 border border-gray-100">
           <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase">Monthly Performance Trends</h3>
-          <LineChart width={700} height={110} data={trendData} margin={{left: -10}}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" fontSize={7} axisLine={false} tickLine={false} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Line type="monotone" dataKey="sales" stroke="#e85d04" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} /><Line type="monotone" dataKey="expenses" stroke="#1e3a8a" strokeWidth={2} dot={false} isAnimationActive={false} /><Line type="monotone" dataKey="waste" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} /></LineChart>
+          <LineChart width={680} height={120} data={trendData} margin={{left: -10, bottom: 5}}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="date" fontSize={7} axisLine={false} tickLine={false} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Line type="monotone" dataKey="sales" stroke="#e85d04" strokeWidth={2} dot={{ r: 2 }} isAnimationActive={false} /><Line type="monotone" dataKey="expenses" stroke="#1e3a8a" strokeWidth={2} dot={false} isAnimationActive={false} /><Line type="monotone" dataKey="waste" stroke="#ef4444" strokeWidth={1} dot={false} isAnimationActive={false} /></LineChart>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg shadow-sm p-3">
+        <div className="grid grid-cols-2 gap-5">
+          <div className="bg-white rounded-lg shadow-sm p-4 pb-2 border border-gray-100">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase">Highest & Lowest Days</h3>
-            <BarChart width={330} height={110} data={extremeData} margin={{ left: -20 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={7} axisLine={false} tickLine={false} interval={0} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Bar dataKey="value" barSize={12} isAnimationActive={false} label={{ position: 'top', fontSize: 6, formatter: ((v: any) => fmt(Number(v))) as any }}>{extremeData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Bar></BarChart>
+            <BarChart width={320} height={120} data={extremeData} margin={{ left: -20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={7} axisLine={false} tickLine={false} interval={0} /><YAxis fontSize={7} tickFormatter={(v)=>`${v/1000}k`} axisLine={false} tickLine={false} /><Bar dataKey="value" barSize={16} isAnimationActive={false} label={{ position: 'top', fontSize: 6, formatter: ((v: any) => fmt(Number(v))) as any }}>{extremeData.map((d: any, i: number) => <Cell key={i} fill={d.fill} />)}</Bar></BarChart>
           </div>
-          <div className="bg-white rounded-lg shadow-sm p-3">
+          <div className="bg-white rounded-lg shadow-sm p-4 pb-2 border border-gray-100">
             <h3 className="text-[9px] font-bold text-[#0a192f] mb-2 uppercase">Waste % By Branch</h3>
-            <BarChart width={330} height={110} data={branchesData} margin={{ left: -20 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={7} axisLine={false} tickLine={false} /><YAxis fontSize={7} tickFormatter={(v)=>`${v}%`} axisLine={false} tickLine={false} /><ReferenceLine y={10} stroke="#d4af37" strokeDasharray="3 3" label={{ position: 'top', value: '10% Target', fill: '#d4af37', fontSize: 7, fontWeight: 'bold' }} /><Bar dataKey="wasteRate" fill="#ef4444" barSize={12} isAnimationActive={false} label={{ position: 'top', fill: '#ef4444', fontSize: 7, formatter: (v:any)=>`${v}%` }} /></BarChart>
+            <BarChart width={320} height={120} data={branchesData} margin={{ left: -20, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" fontSize={7} axisLine={false} tickLine={false} /><YAxis fontSize={7} tickFormatter={(v)=>`${v}%`} axisLine={false} tickLine={false} /><ReferenceLine y={10} stroke="#d4af37" strokeDasharray="3 3" label={{ position: 'top', value: '10% Target', fill: '#d4af37', fontSize: 7, fontWeight: 'bold' }} /><Bar dataKey="wasteRate" fill="#ef4444" barSize={16} isAnimationActive={false} label={{ position: 'top', fill: '#ef4444', fontSize: 7, formatter: (v:any)=>`${v}%` }} /></BarChart>
           </div>
         </div>
 

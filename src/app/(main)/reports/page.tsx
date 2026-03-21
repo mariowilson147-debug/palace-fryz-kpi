@@ -321,11 +321,13 @@ export default function ReportsPage() {
          ref={boardReportRef}
          startDate={startDate || 'INCEPTION'}
          endDate={endDate || 'CURRENT'}
+         isComparing={isComparing}
+         compareStartDate={compareStartDate}
+         compareEndDate={compareEndDate}
          stats={stats}
          branchesData={branchesData}
          trendData={trendData}
          extremes={extremes}
-         expenseCategories={expenseCategories}
       />
 
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 border-b border-border pb-6">
