@@ -267,7 +267,9 @@ export default function ReportsPage() {
         pdf.setFontSize(11);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(100);
-        pdf.text(`${titleStr} | Range: ${startDate || 'All Time'} to ${endDate || 'All Time'}`, 10, 22);
+        const rangeStr = `${startDate || 'All Time'} to ${endDate || 'All Time'}`;
+        const compStr = (compareStartDate && compareEndDate) ? ` vs ${compareStartDate} to ${compareEndDate}` : '';
+        pdf.text(`${titleStr} | Range: ${rangeStr}${compStr}`, 10, 22);
         pdf.addImage(dataUrl, 'PNG', xOffset, 30, imgWidth, imgHeight);
         pdf.setFontSize(8);
         pdf.setTextColor(150);
@@ -400,7 +402,10 @@ export default function ReportsPage() {
                 >
                   <div className="mb-8 border-b border-border pb-4 pr-32">
                     <h4 className="text-2xl font-bold tracking-widest uppercase text-foreground print:text-black">{branch.name} <span className="text-gold font-normal text-lg">Report</span></h4>
-                    <p className="text-sm text-gray-500 mt-1 uppercase tracking-wider">Period: {startDate || '(Earliest)'} to {endDate || '(Latest)'}</p>
+                    <p className="text-sm text-gray-500 mt-1 uppercase tracking-wider">
+                      Period: {startDate || '(Earliest)'} to {endDate || '(Latest)'}
+                      {compareStartDate && compareEndDate && ` | VS ${compareStartDate} to ${compareEndDate}`}
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -479,7 +484,10 @@ export default function ReportsPage() {
               >
                 <div className="mb-10 border-b border-border pb-4 w-3/4">
                   <h4 className="text-2xl font-bold tracking-widest uppercase text-foreground print:text-black">Performance <span className="text-gold font-normal text-lg">Matrix</span></h4>
-                  <p className="text-sm text-gray-500 mt-1 uppercase tracking-wider">Period: {startDate || '(Earliest)'} to {endDate || '(Latest)'}</p>
+                  <p className="text-sm text-gray-500 mt-1 uppercase tracking-wider">
+                    Period: {startDate || '(Earliest)'} to {endDate || '(Latest)'}
+                    {compareStartDate && compareEndDate && ` | VS ${compareStartDate} to ${compareEndDate}`}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
