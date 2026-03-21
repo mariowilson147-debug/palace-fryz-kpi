@@ -19,6 +19,9 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [isComparing, setIsComparing] = useState(false);
+  const [compareStartDate, setCompareStartDate] = useState('');
+  const [compareEndDate, setCompareEndDate] = useState('');
   
   const [branchesData, setBranchesData] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalSales: 0, totalExp: 0, totalWaste: 0, netProfit: 0 });
@@ -76,20 +79,37 @@ export default function ReportsPage() {
           wasteQuery = wasteQuery.lte('date', endDate);
         }
 
-        const [ { data: sales }, { data: expenses }, { data: wasteEntries } ] = await Promise.all([
-          salesQuery, expQuery, wasteQuery
+        let compSalesQuery = Promise.resolve({ data: [] as any[] });
+        let compExpQuery = Promise.resolve({ data: [] as any[] });
+        let compWasteQuery = Promise.resolve({ data: [] as any[] });
+
+        if (isComparing && compareStartDate && compareEndDate) {
+          compSalesQuery = supabase.from('sales').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
+          compExpQuery = supabase.from('expenses').select('*').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
+          compWasteQuery = supabase.from('waste_entries').select('id, branch_id, date').is('deleted_at', null).gte('date', compareStartDate).lte('date', compareEndDate);
+        }
+
+        const [ { data: sales }, { data: expenses }, { data: wasteEntries }, { data: compSales }, { data: compExpenses }, { data: compWasteEntries } ] = await Promise.all([
+          salesQuery, expQuery, wasteQuery, compSalesQuery, compExpQuery, compWasteQuery
         ]);
 
         let wasteItemsMap: Record<string, number> = {};
         if (wasteEntries && wasteEntries.length > 0) {
           const entryIds = wasteEntries.map(w => w.id);
           const { data: items } = await supabase.from('waste_items').select('waste_entry_id, total_cost').in('waste_entry_id', entryIds);
-          
           items?.forEach(item => {
             const entry = wasteEntries.find(w => w.id === item.waste_entry_id);
-            if (entry) {
-              wasteItemsMap[entry.branch_id] = (wasteItemsMap[entry.branch_id] || 0) + Number(item.total_cost);
-            }
+            if (entry) wasteItemsMap[entry.branch_id] = (wasteItemsMap[entry.branch_id] || 0) + Number(item.total_cost);
+          });
+        }
+
+        let compWasteItemsMap: Record<string, number> = {};
+        if (compWasteEntries && compWasteEntries.length > 0) {
+          const entryIds = compWasteEntries.map(w => w.id);
+          const { data: items } = await supabase.from('waste_items').select('waste_entry_id, total_cost').in('waste_entry_id', entryIds);
+          items?.forEach(item => {
+            const entry = compWasteEntries.find(w => w.id === item.waste_entry_id);
+            if (entry) compWasteItemsMap[entry.branch_id] = (compWasteItemsMap[entry.branch_id] || 0) + Number(item.total_cost);
           });
         }
 
@@ -145,6 +165,13 @@ export default function ReportsPage() {
             expenses: bExp.filter(e => e.date === date).reduce((sum, e) => sum + Number(e.amount), 0),
           }));
 
+          const bCompSales = compSales?.filter(s => s.branch_id === b.id) || [];
+          const bCompExp = compExpenses?.filter(e => e.branch_id === b.id) || [];
+          const compTotalSales = bCompSales.reduce((sum, s) => sum + (Number(s.total_sales) || 0), 0);
+          const compTotalExp = bCompExp.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const compTotalWaste = compWasteItemsMap[b.id] || 0;
+          const compNetProfit = compTotalSales - compTotalExp - compTotalWaste;
+
           return {
             id: b.id,
             name: b.name,
@@ -160,7 +187,11 @@ export default function ReportsPage() {
             wasteRate: totalSales > 0 ? ((totalWaste / totalSales) * 100).toFixed(1) : 0,
             targetRate: targetRate.toFixed(1),
             passed: actualExpenseRate <= targetRate,
-            trendData
+            trendData,
+            compTotalSales: isComparing ? compTotalSales : undefined,
+            compTotalExp: isComparing ? compTotalExp : undefined,
+            compTotalWaste: isComparing ? compTotalWaste : undefined,
+            compNetProfit: isComparing ? compNetProfit : undefined,
           };
         });
 
@@ -200,7 +231,7 @@ export default function ReportsPage() {
     }
 
     generateReport();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, isComparing, compareStartDate, compareEndDate]);
 
   const exportPDF = async (ref: React.RefObject<HTMLDivElement | null>, filename: string, titleStr: string, isA4BoardReport = false) => {
     if (!ref || !ref.current) return;
@@ -251,13 +282,36 @@ export default function ReportsPage() {
     }
   };
 
-  const MetricBlock = ({ title, value, sub }: { title: string, value: string, sub?: string }) => (
-    <div className="bg-surface/50 print:bg-gray-100 p-4 rounded-lg border border-border print:border-gray-300">
-      <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">{title}</p>
-      <p className="text-xl font-bold text-foreground print:text-black">{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
-    </div>
-  );
+  const MetricBlock = ({ title, value, sub, compValue }: { title: string, value: string, sub?: string, compValue?: number }) => {
+    let varianceDisplay = null;
+    if (compValue !== undefined && compValue > 0) {
+      const numValue = Number(value.replace(/[^0-9.-]+/g,""));
+      const variance = ((numValue - compValue) / compValue) * 100;
+      const isPositive = variance > 0;
+      const invertRed = title.includes('Expense') || title.includes('Waste');
+      const color = invertRed 
+        ? (isPositive ? 'text-red-500' : 'text-green-500') 
+        : (isPositive ? 'text-green-500' : 'text-red-500');
+      
+      varianceDisplay = (
+        <span className={`text-[11px] ml-2 ${color} font-bold`}>
+          {isPositive ? '▲' : '▼'} {Math.abs(variance).toFixed(1)}%
+        </span>
+      );
+    }
+
+    return (
+      <div className="bg-surface/50 print:bg-gray-100 p-4 rounded-lg border border-border print:border-gray-300">
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">{title}</p>
+        <div className="flex items-end">
+          <p className="text-xl font-bold text-foreground print:text-black">{value}</p>
+          {varianceDisplay}
+        </div>
+        {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+        {compValue !== undefined && <p className="text-[10px] text-gray-400 mt-1">Prev: KES {compValue.toLocaleString()}</p>}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
@@ -289,20 +343,37 @@ export default function ReportsPage() {
             <FileText size={18} /> Board PDF Export
           </button>
           
-          <div className="flex flex-col sm:flex-row gap-3 bg-surface p-2 rounded-lg border border-border overflow-x-auto w-full xl:w-auto">
-            <div className="flex items-center gap-2 px-2 shrink-0">
-              <Calendar size={18} className="text-gold" />
-              <span className="text-sm font-medium">Filter:</span>
+          <div className="flex flex-col gap-3 w-full xl:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3 bg-surface p-2 rounded-lg border border-border overflow-x-auto w-full">
+              <div className="flex items-center gap-2 px-2 shrink-0">
+                <Calendar size={18} className="text-gold" />
+                <span className="text-sm font-medium">Filter:</span>
+              </div>
+              <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <span className="text-gray-500 self-center">to</span>
+              <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <div className="flex border-l border-border pl-2 gap-1 ml-1 shrink-0">
+                <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('week')}>Week</button>
+                <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('month')}>Month</button>
+                <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('year')}>Year</button>
+                <label className="flex items-center gap-2 ml-4 px-2 cursor-pointer border-l border-border pl-4">
+                  <input type="checkbox" checked={isComparing} onChange={(e) => setIsComparing(e.target.checked)} className="accent-gold w-4 h-4" />
+                  <span className="text-sm text-gray-300">Compare</span>
+                </label>
+              </div>
             </div>
-            <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={startDate} onChange={e => setStartDate(e.target.value)} />
-            <span className="text-gray-500 self-center">to</span>
-            <input type="date" className="bg-background border border-border rounded px-3 py-1.5 text-sm outline-none text-foreground shrink-0" value={endDate} onChange={e => setEndDate(e.target.value)} />
-            <div className="flex border-l border-border pl-2 gap-1 ml-1 shrink-0">
-              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('week')}>Week</button>
-              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('month')}>Month</button>
-              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('year')}>Year</button>
-              <button className="px-3 py-1.5 text-xs bg-background border border-border hover:border-gold/50 hover:text-gold rounded transition-colors" onClick={() => applyPreset('all')}>All</button>
-            </div>
+            
+            {isComparing && (
+               <div className="flex flex-col sm:flex-row gap-3 bg-surface/50 p-2 rounded-lg border border-border border-dashed overflow-x-auto w-full animate-in fade-in slide-in-from-top-2">
+                 <div className="flex items-center gap-2 px-2 shrink-0">
+                   <div className="w-4 h-4 rounded-full border border-gray-500 flex items-center justify-center text-[9px] text-gray-400">vs</div>
+                   <span className="text-sm font-medium text-gray-400">Previous:</span>
+                 </div>
+                 <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0" value={compareStartDate} onChange={e => setCompareStartDate(e.target.value)} />
+                 <span className="text-gray-600 self-center">to</span>
+                 <input type="date" className="bg-background/50 border border-border rounded px-3 py-1.5 text-sm outline-none text-gray-300 shrink-0" value={compareEndDate} onChange={e => setCompareEndDate(e.target.value)} />
+               </div>
+            )}
           </div>
         </div>
       </div>
@@ -338,10 +409,10 @@ export default function ReportsPage() {
                   </div>
 
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                    <MetricBlock title="Net Sales" value={`KES ${branch.totalSales.toLocaleString()}`} />
-                    <MetricBlock title="Net Expenses" value={`KES ${branch.totalExp.toLocaleString()}`} />
-                    <MetricBlock title="Net Waste" value={`KES ${branch.totalWaste.toLocaleString()}`} />
-                    <MetricBlock title="Net Profit" value={`KES ${branch.netProfit.toLocaleString()}`} />
+                    <MetricBlock title="Net Sales" value={`KES ${branch.totalSales.toLocaleString()}`} compValue={branch.compTotalSales} />
+                    <MetricBlock title="Net Expenses" value={`KES ${branch.totalExp.toLocaleString()}`} compValue={branch.compTotalExp} />
+                    <MetricBlock title="Net Waste" value={`KES ${branch.totalWaste.toLocaleString()}`} compValue={branch.compTotalWaste} />
+                    <MetricBlock title="Net Profit" value={`KES ${branch.netProfit.toLocaleString()}`} compValue={branch.compNetProfit} />
                     <div className="bg-surface/50 print:bg-gray-100 p-4 rounded-lg border border-border print:border-gray-300">
                       <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Expense Rate</p>
                       <p className={`text-xl font-bold ${branch.passed ? 'text-green-500' : 'text-red-500'}`}>{branch.actualExpenseRate}%</p>
