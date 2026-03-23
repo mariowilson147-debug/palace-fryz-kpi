@@ -143,8 +143,8 @@ export default function WastePage() {
                 <Input 
                   label="Quantity" 
                   type="number"
-                  min="0.1"
-                  step="0.1"
+                  min="0.01"
+                  step="0.01"
                   value={item.quantity}
                   onChange={(e) => updateItem(item.id, 'quantity', e.target.value)}
                   placeholder="0"
