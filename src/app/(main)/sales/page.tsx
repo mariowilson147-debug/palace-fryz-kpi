@@ -15,17 +15,23 @@ export default function SalesPage() {
   const [saving, setSaving] = useState(false);
   
   // Selection
+  // Selection
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const selectedBranch = branches.find(b => b.id === selectedBranchId);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [shift, setShift] = useState<'day' | 'night'>('day');
 
-  // Amounts
+  // Amounts Day or Single
   const [cash, setCash] = useState('');
   const [mpesa, setMpesa] = useState('');
   const [credit, setCredit] = useState('');
 
-  const total = (Number(cash) || 0) + (Number(mpesa) || 0) + (Number(credit) || 0);
+  // Amounts Night
+  const [nightCash, setNightCash] = useState('');
+  const [nightMpesa, setNightMpesa] = useState('');
+  const [nightCredit, setNightCredit] = useState('');
+
+  const total = (Number(cash) || 0) + (Number(mpesa) || 0) + (Number(credit) || 0) + 
+                (selectedBranch?.shift_type === 'dual' ? (Number(nightCash) || 0) + (Number(nightMpesa) || 0) + (Number(nightCredit) || 0) : 0);
 
   useEffect(() => {
     async function fetchBranches() {
@@ -49,15 +55,47 @@ export default function SalesPage() {
 
     setSaving(true);
     try {
-      const shiftType = selectedBranch?.shift_type === 'single' ? null : shift;
-      const { error } = await supabase.from('sales').insert([{
-        branch_id: selectedBranchId,
-        date,
-        shift: shiftType,
-        cash: Number(cash) || 0,
-        mpesa: Number(mpesa) || 0,
-        credit: Number(credit) || 0,
-      }]);
+      const inserts = [];
+      if (selectedBranch?.shift_type === 'dual') {
+        const dayTotal = (Number(cash) || 0) + (Number(mpesa) || 0) + (Number(credit) || 0);
+        if (dayTotal > 0) {
+          inserts.push({
+            branch_id: selectedBranchId,
+            date,
+            shift: 'day',
+            cash: Number(cash) || 0,
+            mpesa: Number(mpesa) || 0,
+            credit: Number(credit) || 0,
+          });
+        }
+        
+        const nightTotal = (Number(nightCash) || 0) + (Number(nightMpesa) || 0) + (Number(nightCredit) || 0);
+        if (nightTotal > 0) {
+          inserts.push({
+            branch_id: selectedBranchId,
+            date,
+            shift: 'night',
+            cash: Number(nightCash) || 0,
+            mpesa: Number(nightMpesa) || 0,
+            credit: Number(nightCredit) || 0,
+          });
+        }
+      } else {
+        inserts.push({
+          branch_id: selectedBranchId,
+          date,
+          shift: null,
+          cash: Number(cash) || 0,
+          mpesa: Number(mpesa) || 0,
+          credit: Number(credit) || 0,
+        });
+      }
+
+      if (inserts.length === 0) {
+        throw new Error("Please enter at least one sales value.");
+      }
+
+      const { error } = await supabase.from('sales').insert(inserts);
 
       if (error) throw error;
       
@@ -66,6 +104,9 @@ export default function SalesPage() {
       setCash('');
       setMpesa('');
       setCredit('');
+      setNightCash('');
+      setNightMpesa('');
+      setNightCredit('');
       router.refresh();
       
     } catch (err: any) {
@@ -104,54 +145,113 @@ export default function SalesPage() {
               onChange={(e) => setDate(e.target.value)}
               required
             />
-
-            {selectedBranch?.shift_type === 'dual' && (
-              <Select 
-                label="Shift"
-                value={shift}
-                onChange={(e) => setShift(e.target.value as 'day'|'night')}
-                options={[
-                  { value: 'day', label: 'Day Shift' },
-                  { value: 'night', label: 'Night Shift' }
-                ]}
-                required
-              />
-            )}
           </div>
 
-          <div className="bg-surface/50 border border-border p-6 rounded-lg mb-8">
-            <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-4 flex items-center gap-2">
-              <Wallet size={16} /> Payment Breakdown (KES)
-            </h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Input 
-                label="Cash" 
-                type="number"
-                min="0"
-                value={cash}
-                onChange={(e) => setCash(e.target.value)}
-                placeholder="0"
-              />
-              <Input 
-                label="M-Pesa" 
-                type="number"
-                min="0"
-                value={mpesa}
-                onChange={(e) => setMpesa(e.target.value)}
-                placeholder="0"
-              />
-              <Input 
-                label="Credit" 
-                type="number"
-                min="0"
-                value={credit}
-                onChange={(e) => setCredit(e.target.value)}
-                placeholder="0"
-              />
-            </div>
+          {selectedBranch?.shift_type === 'dual' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-surface/50 border border-border p-6 rounded-lg">
+                <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-4 flex items-center gap-2">
+                  <Wallet size={16} /> Day Shift (KES)
+                </h4>
+                
+                <div className="space-y-4">
+                  <Input 
+                    label="Cash" 
+                    type="number"
+                    min="0"
+                    value={cash}
+                    onChange={(e) => setCash(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input 
+                    label="M-Pesa" 
+                    type="number"
+                    min="0"
+                    value={mpesa}
+                    onChange={(e) => setMpesa(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input 
+                    label="Credit" 
+                    type="number"
+                    min="0"
+                    value={credit}
+                    onChange={(e) => setCredit(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
 
-            <div className="mt-8 p-4 bg-background border border-gold/30 rounded-lg flex justify-between items-center">
+              <div className="bg-surface/50 border border-border p-6 rounded-lg">
+                <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-4 flex items-center gap-2">
+                  <Wallet size={16} /> Night Shift (KES)
+                </h4>
+                
+                <div className="space-y-4">
+                  <Input 
+                    label="Cash" 
+                    type="number"
+                    min="0"
+                    value={nightCash}
+                    onChange={(e) => setNightCash(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input 
+                    label="M-Pesa" 
+                    type="number"
+                    min="0"
+                    value={nightMpesa}
+                    onChange={(e) => setNightMpesa(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input 
+                    label="Credit" 
+                    type="number"
+                    min="0"
+                    value={nightCredit}
+                    onChange={(e) => setNightCredit(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-surface/50 border border-border p-6 rounded-lg mb-8">
+              <h4 className="text-sm font-semibold tracking-wider text-gray-400 uppercase mb-4 flex items-center gap-2">
+                <Wallet size={16} /> Payment Breakdown (KES)
+              </h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Input 
+                  label="Cash" 
+                  type="number"
+                  min="0"
+                  value={cash}
+                  onChange={(e) => setCash(e.target.value)}
+                  placeholder="0"
+                />
+                <Input 
+                  label="M-Pesa" 
+                  type="number"
+                  min="0"
+                  value={mpesa}
+                  onChange={(e) => setMpesa(e.target.value)}
+                  placeholder="0"
+                />
+                <Input 
+                  label="Credit" 
+                  type="number"
+                  min="0"
+                  value={credit}
+                  onChange={(e) => setCredit(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="bg-surface/50 border border-border p-6 rounded-lg mb-8">
+            <div className="p-4 bg-background border border-gold/30 rounded-lg flex justify-between items-center">
               <span className="text-lg font-medium text-gray-300">Total Sales</span>
               <span className="text-3xl font-bold text-gold">
                 KES {total.toLocaleString()}
