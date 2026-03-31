@@ -43,8 +43,8 @@ export default function Header() {
               <p className="text-xs text-gray-500">Admin</p>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={handleLogout}
             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors ml-2"
             title="Secure Logout"

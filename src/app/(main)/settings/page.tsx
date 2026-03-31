@@ -1,233 +1,122 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React from 'react';
 import { Card } from '@/components/ui/Card';
-import { Input, Select } from '@/components/ui/Input';
-import { Modal } from '@/components/ui/Modal';
-import { supabase } from '@/lib/supabase';
-import { Branch } from '@/lib/types';
-import { Plus, Edit2, Trash2, Building } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
+import { Building2, Save, UploadCloud, Link as LinkIcon, FileSpreadsheet } from 'lucide-react';
 
 export default function SettingsPage() {
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Form State
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [shiftType, setShiftType] = useState<'single' | 'dual'>('single');
-  const [expenseRateTarget, setExpenseRateTarget] = useState('');
-  const [formError, setFormError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const fetchBranches = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('branches')
-        .select('*')
-        .order('name');
-        
-      if (error) throw error;
-      setBranches(data || []);
-    } catch (error) {
-      console.error('Error fetching branches:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBranches();
-  }, []);
-
-  const openAddModal = () => {
-    setIsEditing(false);
-    setCurrentBranchId(null);
-    setName('');
-    setShiftType('single');
-    setExpenseRateTarget('');
-    setFormError('');
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (branch: Branch) => {
-    setIsEditing(true);
-    setCurrentBranchId(branch.id);
-    setName(branch.name);
-    setShiftType(branch.shift_type);
-    setExpenseRateTarget(branch.expense_rate_target.toString());
-    setFormError('');
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this branch?')) return;
-    try {
-      const { error } = await supabase.from('branches').delete().eq('id', id);
-      if (error) throw error;
-      fetchBranches();
-    } catch (error) {
-      alert('Failed to delete branch. It might be referenced by sales or expenses.');
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !expenseRateTarget) {
-      setFormError('Name and Target are required');
-      return;
-    }
-    
-    setSubmitting(true);
-    setFormError('');
-    
-    try {
-      const branchData = {
-        name,
-        shift_type: shiftType,
-        expense_rate_target: parseFloat(expenseRateTarget)
-      };
-
-      if (isEditing && currentBranchId) {
-        const { error } = await supabase
-          .from('branches')
-          .update(branchData)
-          .eq('id', currentBranchId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('branches')
-          .insert([branchData]);
-        if (error) throw error;
-      }
-
-      setIsModalOpen(false);
-      fetchBranches();
-    } catch (error: any) {
-      setFormError(error.message || 'Failed to save branch');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Settings</h2>
-          <p className="text-gray-400 mt-1">Manage system configurations and branches</p>
-        </div>
-        <button className="btn-primary" onClick={openAddModal}>
-          <Plus size={20} /> Add Branch
-        </button>
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Platform Settings</h1>
+        <p className="text-slate-500">Manage property details and cloud integrations.</p>
       </div>
 
-      <Card title="Branches Management" subtitle="Configure branches, shifts, and targets">
-        {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading branches...</div>
-        ) : branches.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-border rounded-lg bg-surface/50 text-gray-400">
-            <Building className="mx-auto mb-3 opacity-50" size={40} />
-            <p>No branches configured yet.</p>
-            <button className="btn-secondary mt-4" onClick={openAddModal}>Add First Branch</button>
+      <div className="space-y-6">
+        {/* Properties Configuration */}
+        <Card className="p-0 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50">
+            <Building2 className="text-[#059669]" size={20} />
+            <h2 className="text-lg font-bold text-slate-900">Property Configuration</h2>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-border text-gray-400 text-sm tracking-wider uppercase">
-                  <th className="pb-3 font-medium">Branch Name</th>
-                  <th className="pb-3 font-medium">Shift Type</th>
-                  <th className="pb-3 font-medium text-right">Expense Target (%)</th>
-                  <th className="pb-3 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {branches.map((branch) => (
-                  <tr key={branch.id} className="hover:bg-surface/50 transition-colors">
-                    <td className="py-4 font-medium">{branch.name}</td>
-                    <td className="py-4 capitalize">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${branch.shift_type === 'dual' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'}`}>
-                        {branch.shift_type}
-                      </span>
-                    </td>
-                    <td className="py-4 text-right">{branch.expense_rate_target}%</td>
-                    <td className="py-4 text-right flex justify-end gap-3">
-                      <button 
-                        onClick={() => openEditModal(branch)} 
-                        className="p-1.5 text-gray-400 hover:text-gold transition-colors"
-                        title="Edit"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(branch.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="p-6 space-y-8">
+            {/* Property 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-3 flex flex-col items-center">
+                <div className="w-24 h-24 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-50 hover:border-[#059669] transition-all group">
+                  <div className="text-center p-2">
+                    <UploadCloud className="mx-auto text-slate-400 group-hover:text-[#059669] mb-1" size={20} />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Logo A</span>
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-9 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Property A Name" defaultValue="Grand Plaza Heights" />
+                  <Input label="Shift Type" defaultValue="Dual (Day/Night)" disabled />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Z Sales Projected Offset (%)" defaultValue="0" />
+                  <Input label="Expense Rate Target (%)" defaultValue="25" />
+                </div>
+              </div>
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Property 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              <div className="md:col-span-3 flex flex-col items-center">
+                <div className="w-24 h-24 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center mb-3 cursor-pointer hover:bg-slate-50 hover:border-[#059669] transition-all group">
+                  <div className="text-center p-2">
+                    <UploadCloud className="mx-auto text-slate-400 group-hover:text-[#059669] mb-1" size={20} />
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Logo B</span>
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-9 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Property B Name" defaultValue="Urban Loft Executive" />
+                  <Input label="Shift Type" defaultValue="Single" disabled />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Z Sales Projected Offset (%)" defaultValue="-5" />
+                  <Input label="Expense Rate Target (%)" defaultValue="35" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button className="font-bold">
+                <Save size={16} className="mr-2" /> Save Property Settings
+              </Button>
+            </div>
           </div>
-        )}
-      </Card>
+        </Card>
 
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title={isEditing ? 'Edit Branch' : 'Add New Branch'}
-        maxWidth="max-w-md"
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input 
-            label="Branch Name" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)} 
-            placeholder="e.g. Kilimani Branch" 
-            required
-          />
-          
-          <Select 
-            label="Shift Type"
-            value={shiftType}
-            onChange={(e) => setShiftType(e.target.value as 'single' | 'dual')}
-            options={[
-              { value: 'single', label: 'Single Shift' },
-              { value: 'dual', label: 'Dual Shift (Day & Night)' }
-            ]}
-          />
-
-          <Input 
-            label="Expense Rate Target (%)" 
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            value={expenseRateTarget} 
-            onChange={(e) => setExpenseRateTarget(e.target.value)} 
-            placeholder="30.0" 
-            required
-          />
-
-          {formError && <div className="text-red-400 text-sm p-2 bg-red-500/10 rounded">{formError}</div>}
-
-          <div className="pt-4 flex justify-end gap-3 border-t border-border mt-6">
-            <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </button>
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? 'Saving...' : 'Save Branch'}
-            </button>
+        {/* Cloud Integrity */}
+        <Card className="p-0 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div className="flex items-center gap-3">
+              <LinkIcon className="text-[#059669]" size={20} />
+              <h2 className="text-lg font-bold text-slate-900">Cloud Data Integrity</h2>
+            </div>
+            <Badge variant="brand" className="text-[10px] uppercase font-bold tracking-widest">Connected</Badge>
           </div>
-        </form>
-      </Modal>
+          <div className="p-6">
+            <p className="text-sm text-slate-600 mb-6 max-w-2xl">
+              Previously processed Google Sheets from the Expense Register module are archived here for historical parity mapping. No manual intervention is typically needed.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-4 bg-white border border-slate-200 rounded-lg hover:border-[#059669] transition-colors cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <FileSpreadsheet className="text-[#059669]" size={20} />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#059669]">HOTELMAIN_Q2.xlsx</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Parsed 14 May 2023 &bull; 412 Rows</p>
+                  </div>
+                </div>
+                <Badge className="bg-slate-100 text-slate-500 font-bold border-none text-[10px] uppercase">Archive</Badge>
+              </div>
+
+              <div className="flex justify-between items-center p-4 bg-white border border-slate-200 rounded-lg hover:border-[#059669] transition-colors cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <FileSpreadsheet className="text-[#059669]" size={20} />
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-[#059669]">HOTELMAIN_Q1.xlsx</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">Parsed 02 Jan 2023 &bull; 564 Rows</p>
+                  </div>
+                </div>
+                <Badge className="bg-slate-100 text-slate-500 font-bold border-none text-[10px] uppercase">Archive</Badge>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

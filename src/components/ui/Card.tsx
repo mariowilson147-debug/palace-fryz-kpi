@@ -43,7 +43,7 @@ export function StatCard({ title, value, icon: Icon, trend, trendUp }: StatCardP
             <Icon size={20} />
           </div>
         </div>
-        
+
         <div className="flex items-baseline gap-4">
           <p className="text-3xl font-bold tracking-tight">{value}</p>
           {trend && (

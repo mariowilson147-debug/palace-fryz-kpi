@@ -28,6 +28,7 @@ export interface Expense {
   branch_id: string;
   date: string;
   amount: number;
+  category: 'petty_cash' | 'hgp' | 'register';
   description: string | null;
   created_at: string;
   updated_at: string;
@@ -38,6 +39,18 @@ export interface WasteEntry {
   id: string;
   branch_id: string;
   date: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface Credit {
+  id: string;
+  branch_id: string;
+  date: string;
+  type: 'paid' | 'staff';
+  amount: number;
+  description: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -67,3 +80,4 @@ export type CreateSale = Omit<Sale, 'id' | 'created_at' | 'updated_at' | 'delete
 export type CreateExpense = Omit<Expense, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
 export type CreateWasteEntry = Omit<WasteEntry, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;
 export type CreateWasteItem = Omit<WasteItem, 'id' | 'total_cost'>;
+export type CreateCredit = Omit<Credit, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>;

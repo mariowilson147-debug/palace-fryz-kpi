@@ -19,7 +19,7 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         // Using approximate fast counts or sum aggregations for the dashboard
-        
+
         const [
           { count: branchCount },
           { data: salesData },
@@ -31,7 +31,7 @@ export default function DashboardPage() {
           supabase.from('expenses').select('amount').is('deleted_at', null),
           supabase.from('waste_items').select('total_cost')
         ]);
-        
+
         const totalSales = salesData?.reduce((acc, curr) => acc + (Number(curr.total_sales) || 0), 0) || 0;
         const totalExpenses = expenseData?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
         const totalWaste = wasteData?.reduce((acc, curr) => acc + (Number(curr.total_cost) || 0), 0) || 0;
@@ -72,27 +72,27 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Branches" 
-          value={stats.branches} 
-          icon={Building2} 
+        <StatCard
+          title="Total Branches"
+          value={stats.branches}
+          icon={Building2}
         />
-        <StatCard 
-          title="Total Sales" 
-          value={formatCurrency(stats.sales)} 
-          icon={Wallet} 
-          trend="12%" 
+        <StatCard
+          title="Total Sales"
+          value={formatCurrency(stats.sales)}
+          icon={Wallet}
+          trend="12%"
           trendUp={true}
         />
-        <StatCard 
-          title="Total Expenses" 
-          value={formatCurrency(stats.expenses)} 
-          icon={Receipt} 
+        <StatCard
+          title="Total Expenses"
+          value={formatCurrency(stats.expenses)}
+          icon={Receipt}
         />
-        <StatCard 
-          title="Total Waste" 
-          value={formatCurrency(stats.waste)} 
-          icon={Trash2} 
+        <StatCard
+          title="Total Waste"
+          value={formatCurrency(stats.waste)}
+          icon={Trash2}
         />
       </div>
 

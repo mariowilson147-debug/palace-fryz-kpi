@@ -1,70 +1,55 @@
-import { forwardRef, InputHTMLAttributes } from 'react';
+import React, { InputHTMLAttributes } from 'react';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
   error?: string;
-  icon?: React.ReactNode;
+  prefixStr?: string;
+  suffixStr?: string;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, icon, className = '', ...props }, ref) => {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className = '', label, error, prefixStr, suffixStr, id, ...props }, ref) => {
+    const defaultId = React.useId();
+    const inputId = id || defaultId;
+
     return (
-      <div className="w-full">
-        <label className="input-label" htmlFor={props.id || props.name}>
-          {label}
-        </label>
+      <div className="w-full flex flex-col gap-1.5">
+        {label && (
+          <label htmlFor={inputId} className="text-sm font-medium text-slate-700">
+            {label}
+          </label>
+        )}
         <div className="relative">
-          {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {icon}
+          {prefixStr && (
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500">
+              <span className="text-sm font-medium">{prefixStr}</span>
             </div>
           )}
           <input
+            id={inputId}
             ref={ref}
-            className={`input-field ${icon ? 'pl-10' : ''} ${
-              error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
-            } ${className}`}
+            className={`
+              w-full appearance-none rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm
+              placeholder:text-slate-400
+              focus:outline-none focus:ring-2 focus:ring-[#059669]/20 focus:border-[#059669]
+              disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500
+              ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200'}
+              ${prefixStr ? 'pl-8' : ''}
+              ${suffixStr ? 'pr-8' : ''}
+              ${className}
+            `}
             {...props}
           />
+          {suffixStr && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
+              <span className="text-sm font-medium">{suffixStr}</span>
+            </div>
+          )}
         </div>
-        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+        {error && <p className="text-[13px] text-red-500">{error}</p>}
       </div>
     );
   }
 );
 
 Input.displayName = 'Input';
-
-interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label: string;
-  error?: string;
-  options: { value: string; label: string }[];
-}
-
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, className = '', ...props }, ref) => {
-    return (
-      <div className="w-full">
-        <label className="input-label" htmlFor={props.id || props.name}>
-          {label}
-        </label>
-        <select
-          ref={ref}
-          className={`input-field appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23D4AF37%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px_12px] bg-[right_1rem_center] bg-no-repeat ${
-            error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
-          } ${className}`}
-          {...props}
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-surface text-foreground py-2">
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-      </div>
-    );
-  }
-);
-
-Select.displayName = 'Select';
